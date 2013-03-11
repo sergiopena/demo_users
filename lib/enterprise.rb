@@ -129,9 +129,9 @@ class Abiquo::Enterprise < Abiquo
 	def persist_enterprise()
 		begin
 			db = SQLite3::Database.new 'enterprise_demo.db'
-			db.execute "CREATE TABLE IF NOT EXISTS enterprise (enterprise_id INTEGER PRIMARY KEY, enterprise_name VARCHAR(40), timestamp DATETIME)"
-			db.execute "INSERT INTO enterprise VALUES (#{self.id},'#{self.name}',DATETIME('now'))"
-			$log.debug "INSERT INTO enterprise VALUES (#{self.id},'#{self.name}',DATETIME('now'))"
+			db.execute "CREATE TABLE IF NOT EXISTS enterprise (enterprise_id INTEGER PRIMARY KEY, enterprise_name VARCHAR(40), timestamp DATETIME, enabled TINYINT, ip VARCHAR(15))"
+			db.execute "INSERT INTO enterprise VALUES (#{self.id},'#{self.name}',DATETIME('now'),1,null)"
+			$log.debug "INSERT INTO enterprise VALUES (#{self.id},'#{self.name}',DATETIME('now'),1,null)"
 
 		rescue SQLite3::Exception => e
 
@@ -146,7 +146,8 @@ class Abiquo::Enterprise < Abiquo
 	def volatilize_enterprise(ent_name)
 		begin
 			db = SQLite3::Database.new 'enterprise_demo.db'
-	 		stm = db.prepare "DELETE FROM enterprise WHERE enterprise_name like '#{ent_name}'";
+			stm = db.prepare "UPDATE enterprise SET enabled = 0 where enterprise_name like '#{ent_name}';"
+#	 		stm = db.prepare "DELETE FROM enterprise WHERE enterprise_name like '#{ent_name}'";
 	    	rs = stm.execute
 	    
 		rescue SQLite3::Exception => e
@@ -160,12 +161,27 @@ class Abiquo::Enterprise < Abiquo
 		end
 	end
 	
+	def assign_ip(ip)
+		begin
+			db = SQLite3::Database.new 'enterprise_demo.db'
+			stm = db.prepare "UPDATE enterprise SET ip = '#{ip}' where enterprise_name like '#{self.name}'"
+			$log.error "UPDATE enterprise SET ip = '#{ip}' where enterprise_name like '#{self.name}'"
+			rs = stm.execute
+
+		rescue SQLite3::Exception => e
+			
+			puts "Exception occurred updating public IP from enterprise #{self.name}"
+			puts e
+
+		end
+	end 
+
 	def get_expired_enterprises()
 		begin
 
 			db = SQLite3::Database.new 'enterprise_demo.db'
-#			stm = db.prepare "SELECT enterprise_id FROM enterprise WHERE timestamp < DATETIME('now','-1 hour')"
-			stm = db.prepare "SELECT enterprise_name FROM enterprise WHERE timestamp < DATETIME('now','-1 minute');"
+			# stm = db.prepare "SELECT enterprise_id FROM enterprise WHERE enabled = 1 AND timestamp < DATETIME('now','-1 hour')"
+			stm = db.prepare "SELECT enterprise_name FROM enterprise WHERE enabled = 1 AND timestamp < DATETIME('now','-1 minute');"
 			result = stm.execute
 
 

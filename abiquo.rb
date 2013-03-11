@@ -8,5 +8,6 @@ end
 
 require 'lib/enterprise'
 require 'lib/virtualappliance'
+require 'lib/virtualdatacenter'
 require 'lib/roles'
 require 'lib/user'

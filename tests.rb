@@ -10,10 +10,10 @@ require 'rest-client'
 require 'xmlsimple'
 require 'sqlite3'
 
-AbiServer = '10.60.13.7'
+AbiServer = '10.60.13.5'
 AbiUser = 'admin'
 AbiPass = 'xabiquo'
-
+IdDatacenter = 1
 
 $log = Logger.new(STDOUT)
 $log.level = Logger::INFO
@@ -34,26 +34,30 @@ abq = Abiquo.new(AbiServer,AbiUser,AbiPass)
  enterprise.persist_enterprise
 
 # Assign datacenter 1 to enterprise
- enterprise.allow_datacenter(1)
+ enterprise.allow_datacenter(IdDatacenter)
 
 # Instanciate roles object to look for the roles links
 roles = Abiquo::Roles.new
 
 # Define user
-user = Abiquo::User.new(	enterprise.name+"_user", 'passwrod','nombre',
-							'appelliods','email@email.com',
+user = Abiquo::User.new(	enterprise.name+"_user", 'xabiquo','user_name',
+							'user_surname','email@email.com',
 							enterprise.link, 
 							roles.get_link_by_name('USER') )
 # Create user
 user.create
 
 # Define admin
-admin = Abiquo::User.new(	enterprise.name+"_admin", 'passwrod','nombre',
-							'appelliods','email@email.com',
+admin = Abiquo::User.new(	enterprise.name+"_admin", 'xabiquo','admin_name',
+							'admin_surname','email@email.com',
 							enterprise.link, 
 							roles.get_link_by_name('ENTERPRISE_ADMIN') )						
 # Create admin
 admin.create
+
+vdc = Abiquo::VirtualDatacenter.new(enterprise.link,IdDatacenter)
+
+enterprise.assign_ip(vdc.attach_publicIP)
 
 
 $log.info "Checking for expired enterprises"
@@ -63,7 +67,8 @@ enterprise.get_expired_enterprises.each do |expired|
 	cmd = "java -jar tenant-cleanup-jar-with-dependencies.jar http://#{AbiServer}/api #{AbiUser} #{AbiPass} #{expired.to_s}"
     delete_api = `#{cmd}`
 
-    if delete_api == 0
+
+    if delete_api.match /Done!/
     	$log.info "Enterprise #{expired.to_s} deleted from Abiquo"
 		enterprise.volatilize_enterprise(expired.to_s)
     else
