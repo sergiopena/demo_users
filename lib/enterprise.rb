@@ -205,4 +205,55 @@ class Abiquo::Enterprise < Abiquo
 		end
 	end
 
+	def get_active_enterprises()
+		begin
+
+			db = SQLite3::Database.new 'enterprise_demo.db'
+			stm = db.prepare "SELECT enterprise_id,enterprise_name,timestamp,ip FROM enterprise WHERE enabled = 1;"
+			result = stm.execute
+
+			table = Taulukko.new
+			table.headings = ["ID","Enterprise name","Creation time","IP"]
+			result.each do |entry|
+				table << entry
+			end
+
+			table.to_s.each { |x| $log.info x.strip }
+
+		rescue SQLite3::Exception => e
+
+			$log.error "Exception occurred"
+			$log.error e
+
+		ensure
+			stm.close if stm
+			db.close if db
+		end
+	end
+
+	def get_all_enterprises()
+		begin
+
+			db = SQLite3::Database.new 'enterprise_demo.db'
+			stm = db.prepare "SELECT * from enterprise; "
+			result = stm.execute
+
+			table = Taulukko.new
+			table.headings = ["ID","Enterprise name","Creation time","Enabled","IP"]
+			result.each do |entry|
+				table << entry
+			end
+
+			table.to_s.each { |x| $log.info x.strip }
+
+		rescue SQLite3::Exception => e
+
+			$log.error "Exception occurred"
+			$log.error e
+
+		ensure
+			stm.close if stm
+			db.close if db
+		end
+	end
 end
